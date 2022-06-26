@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: process-spreadsheet
+  namespace: dvmn-tilda-spreadsheet-plus-ga
+spec:
+  schedule: "1/5 * * * *"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 100
+      activeDeadlineSeconds: 100
+
+      template:
+        spec:
+          volumes:
+            - name: google-api
+              secret:
+                secretName: google-spreadsheets
+          restartPolicy: Never
+
+          containers:
+            - name: process-spreadsheet
+              image: cr.yandex/crpv16ooo86ne9q0kbqq/service:<COMMIT_HASH>
+              command: [ "python3", "tracking.py" ]
+
+              envFrom:
+                - configMapRef:
+                    name: service
+
+              env:
+                - name: API_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: google-analytics4
+                      key: measurement_api_secret
+                      optional: false
+                - name: MEASUREMENT_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: google-analytics4
+                      key: measurement_id
+                      optional: false
+                - name: TID
+                  valueFrom:
+                    secretKeyRef:
+                      name: google-universal-analytics
+                      key: tid
+                      optional: false
+                - name: SPREADSHEET_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: google-spreadsheets
+                      key: spreadsheet_id
+                      optional: false
+                - name: ROLLBAR_ACCESS_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: rollbar
+                      key: backend_token
+                      optional: false
+
+              volumeMounts:
+                - name: google-api
+                  mountPath: "/etc/google-api"

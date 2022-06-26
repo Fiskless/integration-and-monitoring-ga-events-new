@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service
+  namespace: dvmn-tilda-spreadsheet-plus-ga
+data:
+  ENVIRONMENT: production

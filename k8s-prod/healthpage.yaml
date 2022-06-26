@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthpage
+  namespace: dvmn-tilda-spreadsheet-plus-ga
+  labels:
+    app: healthpage
+spec:
+  selector:
+    matchLabels:
+      app: healthpage
+  template:
+    metadata:
+      labels:
+        app: healthpage
+    spec:
+      volumes:
+        - name: google-api
+          secret:
+            secretName: google-spreadsheets
+
+      containers:
+        - name: healthpage
+          image: cr.yandex/crpv16ooo86ne9q0kbqq/service:<COMMIT_HASH>
+
+          command: [ "python3", "monitoring.py" ]
+
+          ports:
+            - containerPort: 8080
+
+          envFrom:
+            - configMapRef:
+                name: service
+          env:
+            - name: SPREADSHEET_ID
+              valueFrom:
+                secretKeyRef:
+                  name: google-spreadsheets
+                  key: spreadsheet_id
+                  optional: false
+          volumeMounts:
+            - mountPath: "/etc/google-api"
+              name: google-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthpage
+  namespace: dvmn-tilda-spreadsheet-plus-ga
+spec:
+  type: NodePort
+  selector:
+    app: healthpage
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080
+      nodePort: 30131
